@@ -1,0 +1,85 @@
+- Solar :
+SELECT
+  `Country/Area`,
+  `Capacity (MW)`,
+  `Technology Type`,
+  `Status`,
+  `Latitude`,
+  `Longitude`,
+  `State/Province`,
+  `Subregion`,
+  `Region`
+FROM `globlaen`.`solar20_mw_`;
+
+
+- Wind :
+SELECT
+  `Country/Area`,
+  `Capacity (MW)`,
+  `Installation Type`,
+  `Status`,
+  `Latitude`,
+  `Longitude`,
+  `State/Province`,
+  `Subregion`,
+  `Region`
+FROM `globlaen`.`Data_wind_cp1252_quoted`;
+
+
+- Hydro :
+SELECT
+  `Country/Area 1`,
+  `Capacity (MW)`,
+  `Binational`,
+  `Status`,
+  `Technology Type`,
+  `River / Watercourse`,
+  `Latitude`,
+  `Longitude`,
+  `State/Province 1`,
+  `Subregion 1`,
+  `Region 1`
+FROM `globlaen`.`Data_hydro_cp1252_quoted`;
+
+
+- Geo :
+SELECT
+  `Country/Area`,
+  `Unit Capacity (MW)`,
+  `Technology`,
+  `Status`,
+  `Latitude`,
+  `Longitude`,
+  `State/Province`,
+  `Subregion`,
+  `Region`
+FROM `globlaen`.`Data_geo_cp1252_quoted`;
+
+
+- BIO :
+SELECT
+  `Country/Area`,
+  `Capacity (MW)`,
+  `Fuel`,
+  `Status`,
+  `Latitude`,
+  `Longitude`,
+  `State/Province`,
+  `Subregion`,
+  `Region`
+FROM `globlaen`.`Data_bio_cp1252_quoted`;
+
+
+- Nuclear :
+SELECT
+  `Country/Area`,
+  `Capacity (MW)`,
+  `Status`,
+  `Reactor Type`,
+  `Model`,
+  `Latitude`,
+  `Longitude`,
+  `State/Province`,
+  `Subregion`,
+  `Region`
+FROM `globlaen`.`Data_nuclear_cp1252_quoted`;
