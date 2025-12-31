@@ -1,0 +1,56 @@
+let
+    
+    Fonte = Csv.Document(
+        File.Contents("C:\"),
+        [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]
+    ),
+
+    
+    PromovidoCabecalhos = Table.PromoteHeaders(Fonte, [PromoteAllScalars=true]),
+
+    
+    
+    
+   
+    CapText = Table.TransformColumns(
+        PromovidoCabecalhos,
+        {
+            {
+                "Capacity (MW)",
+                each
+                    let
+                        t0 = Text.From(_),
+                        t1 = Text.Replace(Text.Replace(t0, "MW", ""), "mW", ""),
+                        t2 = Text.Replace(t1, " ", ""),       // NBSP (alt+255)
+                        t3 = Text.Replace(t2, " ", ""),
+                        t4 = Text.Replace(t3, ",", ".")
+                    in
+                        Text.Trim(t4)
+                ,
+                type text
+            }
+        }
+    ),
+
+    
+    CapNum = Table.TransformColumns(
+        CapText,
+        {{"Capacity (MW)", each try Number.FromText(_, "en-US") otherwise null, type number}}
+    ),
+
+    
+    
+    AddDiagCols = Table.AddColumn(CapText, "Capacity_MW_Parsed", each try Number.FromText([#"Capacity (MW)"], "en-US") otherwise null, type number),
+    BadRows = Table.SelectRows(AddDiagCols, each [Capacity_MW_Parsed] = null and [#"Capacity (MW)"] <> null),
+
+    
+    BadRowsSlim = Table.SelectColumns(
+        BadRows,
+        List.Intersect({
+            {"Country/Area","Capacity (MW)","Installation Type","Status","Latitude","Longitude","State/Province","Subregion","Region"},
+            Table.ColumnNames(BadRows)
+        })
+    )
+
+in
+    

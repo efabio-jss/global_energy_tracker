@@ -1,0 +1,68 @@
+let
+    
+    Fonte = Csv.Document(
+        File.Contents("C:\"),
+        [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]
+    ),
+
+    
+    Cabecalhos = Table.PromoteHeaders(Fonte, [PromoteAllScalars=true]),
+    // Remove espaços invisíveis dos nomes das colunas (ex.: NBSP)
+    ColNamesTrim = Table.TransformColumnNames(Cabecalhos, each Text.Trim(Text.Clean(_))),
+
+    
+    
+    NBSP = Character.FromNumber(160),
+    NarrowNBSP = " ",   // U+202F, por via das dúvidas
+    CleanTextCol =
+        Table.TransformColumns(
+            ColNamesTrim,
+            {
+                {
+                    "Unit Capacity (MW)",
+                    each
+                        let
+                            t0 = Text.From(_),
+                            t1 = Text.Replace(Text.Replace(t0, NBSP, " "), NarrowNBSP, " "),
+                            t2 = Text.Trim(t1),
+                            t3 = Text.Replace(Text.Replace(t2, "MW", ""), "mW", ""),
+                            t4 = Text.Replace(t3, " ", ""),
+                            // Remove ponto de milhar (ex.: 1.200,5 -> 1200,5)
+                            t5 = Text.Replace(t4, ".", ""),
+                            // Troca vírgula decimal por ponto (1200,5 -> 1200.5)
+                            t6 = Text.Replace(t5, ",", ".")
+                        in
+                            t6
+                    ,
+                    type text
+                }
+            }
+        ),
+
+    
+    ToNumber =
+        Table.TransformColumns(
+            CleanTextCol,
+            {{"Unit Capacity (MW)", each try Number.FromText(_, "en-US") otherwise null, type number}}
+        ),
+
+    
+    Diag_AddParsed =
+        Table.AddColumn(
+            CleanTextCol,
+            "UnitCapacity_Parsed",
+            each try Number.FromText([#"Unit Capacity (MW)"], "en-US") otherwise null,
+            type number
+        ),
+    Diag_BadRows = Table.SelectRows(Diag_AddParsed, each [UnitCapacity_Parsed] = null and [#"Unit Capacity (MW)"] <> null),
+    Diag_Cols =
+        Table.SelectColumns(
+            Diag_BadRows,
+            List.Intersect({
+                {"Country/Area","Unit Capacity (MW)","Technology","Status","Latitude","Longitude","State/Province","Subregion","Region","UnitCapacity_Parsed"},
+                Table.ColumnNames(Diag_BadRows)
+            })
+        )
+
+in
+    

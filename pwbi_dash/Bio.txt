@@ -1,0 +1,66 @@
+let
+    // === 1) Source ===
+    Fonte = Csv.Document(
+        File.Contents("C:\),
+        [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]
+    ),
+
+    // === 2) Headers ===
+    Cabecalhos = Table.PromoteHeaders(Fonte, [PromoteAllScalars=true]),
+    // Remove espaços e caracteres invisíveis dos nomes das colunas
+    ColNamesTrim = Table.TransformColumnNames(Cabecalhos, each Text.Trim(Text.Clean(_))),
+
+    // === 3) Clean Text "Capacity (MW)" ===
+    // Deals With: "MW", "mW", espaços, NBSP, pontos de milhar e vírgulas decimais
+    NBSP = Character.FromNumber(160),
+    NarrowNBSP = " ",
+    CleanTextCol =
+        Table.TransformColumns(
+            ColNamesTrim,
+            {
+                {
+                    "Capacity (MW)",
+                    each
+                        let
+                            t0 = Text.From(_),
+                            t1 = Text.Replace(Text.Replace(t0, NBSP, " "), NarrowNBSP, " "),
+                            t2 = Text.Trim(t1),
+                            t3 = Text.Replace(Text.Replace(t2, "MW", ""), "mW", ""),
+                            t4 = Text.Replace(t3, " ", ""),
+                            t5 = Text.Replace(t4, ".", ""),    // remove pontos de milhar
+                            t6 = Text.Replace(t5, ",", ".")    // troca vírgulas decimais por pontos
+                        in
+                            t6
+                    ,
+                    type text
+                }
+            }
+        ),
+
+    // === 4) Converts (try...otherwise avoids errs) ===
+    ToNumber =
+        Table.TransformColumns(
+            CleanTextCol,
+            {{"Capacity (MW)", each try Number.FromText(_, "en-US") otherwise null, type number}}
+        ),
+
+    // === 5) (Optional) Diagnoses  ===
+    Diag_AddParsed =
+        Table.AddColumn(
+            CleanTextCol,
+            "Capacity_MW_Parsed",
+            each try Number.FromText([#"Capacity (MW)"], "en-US") otherwise null,
+            type number
+        ),
+    Diag_BadRows = Table.SelectRows(Diag_AddParsed, each [Capacity_MW_Parsed] = null and [#"Capacity (MW)"] <> null),
+    Diag_Cols =
+        Table.SelectColumns(
+            Diag_BadRows,
+            List.Intersect({
+                {"Country/Area","Capacity (MW)","Fuel","Status","Latitude","Longitude","State/Province","Subregion","Region"},
+                Table.ColumnNames(Diag_BadRows)
+            })
+        )
+
+in
+   
